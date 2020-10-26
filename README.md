@@ -2,7 +2,6 @@
 
 # 주행 경로 플래닝 & 경로 트래킹
 
----
 
 ## 1. 설명
 
@@ -10,7 +9,6 @@
 - **Planner:** Hybrid A-star
 - **Tracker:** Motion Predictive Control(MPC) with speed and steer
 
----
 
 ## 2. 코드 및 사용법
 
@@ -74,23 +72,20 @@ plt.close()
 
 ## 3. 실험 예시
 
----
 
 ### 3-1) Sample Map
 
 - 아래와 같은 샘플 맵을 만들어 실험해 봤습니다.
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ac82d873-b264-423e-9fbc-d9d88f7f2bcd/map.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ac82d873-b264-423e-9fbc-d9d88f7f2bcd/map.png)
+![](figures/map.png)
 
----
 
 ### 3-2) Path Planning
 
 - 빨간색 선이 생성된 경로, 각 화살표는 시작 지점에서의 방향과 도착 지점에서의 방향입니다.
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4b838d58-4655-4dcb-9744-5d1ef69eeddb/path.png](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4b838d58-4655-4dcb-9744-5d1ef69eeddb/path.png)
+![](figures/path.png)
 
----
 
 ### 3-3) Path Following(Tracking)
 
@@ -98,9 +93,8 @@ plt.close()
 - 빨간색으로 표시되는 accel과 steer를 실시간으로 받아 차량이 움직입니다.
 - 실제 차량에 구현할 때도 실시간으로 제어 입력을 받을 수 있습니다.
 
-![https://s3-us-west-2.amazonaws.com/secure.notion-static.com/966bdd3a-f9f2-4114-b0e1-d4c695a1c5d2/simulation.gif](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/966bdd3a-f9f2-4114-b0e1-d4c695a1c5d2/simulation.gif)
+![](figures/simulation.gif)
 
----
 
 ## 4. 알고리즘 설명
 
