@@ -1,4 +1,5 @@
 import warnings
+
 warnings.simplefilter("ignore")
 
 import cv2
@@ -29,7 +30,7 @@ Properties (Planner)
 '''
 XY_GRID_RESOLUTION = 2.0  # [m]
 YAW_GRID_RESOLUTION = np.deg2rad(15.0)  # [rad]
-MOTION_RESOLUTION = 0.1  # [m] path interpolate resolution
+MOTION_RESOLUTION = 0.5  # [m] path interpolate resolution
 N_STEER = 20  # number of steer command
 VR = 1.0  # robot radius
 
@@ -59,7 +60,8 @@ MAX_TIME = 500.0  # max simulation time
 MAX_ITER = 3  # Max iteration
 DU_TH = 0.1  # iteration finish param
 TARGET_SPEED = 10.0 / 3.6  # [m/s] target speed
-N_IND_SEARCH = 10  # Search index number
+# N_IND_SEARCH = 10  # Search index number
+N_IND_SEARCH = 30  # Search index number
 DT = 0.2  # [s] time tick
 
 # Vehicle parameters
@@ -76,7 +78,8 @@ MAX_SPEED = 55.0 / 3.6  # maximum speed [m/s]
 MIN_SPEED = -20.0 / 3.6  # minimum speed [m/s]
 MAX_ACCEL = 1.0  # maximum accel [m/ss]
 
-dl = 1.0  # course tick
+# dl = 1.0  # course tick
+dl = 0.5  # course tick
 
 
 def update_state(state, a, delta, dt):
@@ -151,6 +154,8 @@ class Controller:
 
         self.update_map(map_image, map_w, map_h)
 
+        self.stuck = 0
+
     def update_map(self, map_image, map_w, map_h):
         self.map_origin = map_image
         self.map_w = map_w
@@ -218,24 +223,45 @@ class Controller:
             if v is not None:
                 self.state.v = v
 
-        # calculate control output
-        xref, self.target_ind, dref = calc_ref_trajectory(
-            self.state, self.plan_x, self.plan_y, self.plan_yaw, [], self.speed_profile, dl, self.target_ind)
         x0 = [self.state.x, self.state.y, self.state.v, self.state.yaw]  # current state
-        self.oa, self.odelta, ox, oy, oyaw, ov = iterative_linear_mpc_control(xref, x0, dref, self.oa, self.odelta)
+
+        # stuck situation...
+        if sum(np.abs(self.a[-5:])) + sum(np.abs(self.v[-5:])) < 0.1:
+            self.stuck = 30
+
+        if self.stuck:
+            n = 20
+            if self.target_ind + n >= len(self.plan_x):
+                n = len(self.plan_x) - self.target_ind - 1
+            for _ in range(n):
+                # calculate control output
+                xref, self.target_ind, dref = calc_ref_trajectory(
+                    self.state, self.plan_x, self.plan_y, self.plan_yaw, [], self.speed_profile, dl, self.target_ind + 1)
+                self.oa, self.odelta, ox, oy, oyaw, ov = iterative_linear_mpc_control(xref, x0, dref, self.oa,
+                                                                                      self.odelta)
+                if self.odelta is not None and abs(self.oa[0]) > 0.2:
+                    self.stuck -= 1
+                    break
+        else:
+            # calculate control output
+            xref, self.target_ind, dref = calc_ref_trajectory(
+                self.state, self.plan_x, self.plan_y, self.plan_yaw, [], self.speed_profile, dl, self.target_ind)
+            x0 = [self.state.x, self.state.y, self.state.v, self.state.yaw]  # current state
+            self.oa, self.odelta, ox, oy, oyaw, ov = iterative_linear_mpc_control(xref, x0, dref, self.oa, self.odelta)
 
         # save states
         if self.odelta is not None:
             di, ai = self.odelta[0], self.oa[0]
-            self.x.append(self.state.x)
-            self.y.append(self.state.y)
-            self.yaw.append(self.state.yaw)
-            self.v.append(self.state.v)
-            self.times.append(t)
-            self.d.append(di)
-            self.a.append(ai)
 
-        return self.d[-1], self.a[-1]
+        self.x.append(self.state.x)
+        self.y.append(self.state.y)
+        self.yaw.append(self.state.yaw)
+        self.v.append(self.state.v)
+        self.times.append(t)
+        self.d.append(di)
+        self.a.append(ai)
+
+        return self.a[-1], self.d[-1]
 
     def check_goal(self):
         return check_goal(self.state, self.goal, self.target_ind, len(self.plan_x))

@@ -129,4 +129,5 @@ dmypy.json
 .pyre/
 
 
-experiments/
+experiments
+.idea
